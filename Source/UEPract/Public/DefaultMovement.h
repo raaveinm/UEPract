@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "InputActionValue.h"
 #include "UnitCharacter.h"
+#include "LevelControl.h"
 #include "GameFramework/Character.h"
 #include "DefaultMovement.generated.h"
 
@@ -58,7 +59,7 @@ protected:
 	///////////////////////////////////////////////
 	// WSAD movement
 	///////////////////////////////////////////////
-
+	
 	// mapping context
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
 	class UInputMappingContext* DefaultMappingContext;
@@ -73,9 +74,16 @@ protected:
 
 	// handling movement & zoom
 	void Move(const struct FInputActionValue& val);
-	void Zoom(const FInputActionValue& val);
-
-
+	void Zoom(const struct FInputActionValue& val);
+	
+	///////////////////////////////////////////////
+	// Level Manager
+	///////////////////////////////////////////////
+	
+	UPROPERTY()
+	ALevelControl* LevelManager;
+	void ChangeFloorUp(const FInputActionValue& val);
+	void ChangeFloorDown(const FInputActionValue& val);
 
 public:	
 	// Called every frame

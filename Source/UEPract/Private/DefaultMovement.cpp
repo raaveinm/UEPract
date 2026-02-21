@@ -14,7 +14,9 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Kismet/GameplayStatics.h"
 
-// Sets default values
+///////////////////////////////////////////////
+// Default Movement
+///////////////////////////////////////////////
 ADefaultMovement::ADefaultMovement()
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
@@ -51,12 +53,16 @@ ADefaultMovement::ADefaultMovement()
 	// 3rd person character doesn't rotate with controller, but rotates with movement direction
 	bUseControllerRotationYaw = false;
 	GetCharacterMovement()->bOrientRotationToMovement = true;
-
 }
 
-// Called when the game starts or when spawned
+///////////////////////////////////////////////
+// Begin Game
+///////////////////////////////////////////////
 void ADefaultMovement::BeginPlay() {
 	Super::BeginPlay();
+	
+	AActor* actorManager = UGameplayStatics::GetActorOfClass(GetWorld(), ALevelControl::StaticClass());
+	LevelManager = Cast<ALevelControl>(actorManager);
 	
 	// Link Master - Slave
 	controlledUnit = Cast<AUnitCharacter>(GetOwner());
@@ -121,29 +127,39 @@ void ADefaultMovement::Zoom(const FInputActionValue& val) {
 	CameraBoom->TargetArmLength = FMath::Clamp(new_length, MIN_ZOOM, MAX_ZOOM);
 }
 
-// Called every frame
+
+///////////////////////////////////////////////
+// Tick
+///////////////////////////////////////////////
 void ADefaultMovement::Tick(const float DeltaTime) {
 	Super::Tick(DeltaTime);
 	
-	FHitResult hit;
-	FVector start = GetActorLocation();
-	FVector end = start - FVector(0,0,10000);
-	FCollisionQueryParams params;
-	params.AddIgnoredActor(this);
+	if (LevelManager) {
+		int32 CalculatedFloor = FMath::Max(0, FMath::FloorToInt(GetActorLocation().Z / LevelManager->FLOOR_HEIGHT));
+		LevelManager->SetFloor(CalculatedFloor);
+	}
+
+	FHitResult Hit;
+	FVector Start = GetActorLocation();
+	FVector End = Start - FVector(0,0,10000);
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(this);
 	
-	if (GetWorld()->LineTraceSingleByChannel(hit, start, end, ECC_GameTraceChannel1, params)) {
-		float desiredHeight = 100.f;
-		float currentHeight = hit.Distance;
-		if (FMath::Abs(currentHeight - desiredHeight) > 1.f) {
-			FVector newLoc = GetActorLocation();
-			newLoc.Z = FMath::FInterpTo(newLoc.Z, hit.Location.Z + desiredHeight, DeltaTime, 10.f);
-			
-			SetActorLocation(newLoc);
+	if (GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_GameTraceChannel1, Params))  {
+		float DesiredHeight = 100.f;
+		float CurrentHeight = Hit.Distance;
+		if (FMath::Abs(CurrentHeight - DesiredHeight) > 1.f) 
+		{
+			FVector NewLoc = GetActorLocation();
+			NewLoc.Z = FMath::FInterpTo(NewLoc.Z, Hit.Location.Z + DesiredHeight, DeltaTime, 10.f);
+			SetActorLocation(NewLoc);
 		}
 	}
 }
 
-// Called to bind functionality to input
+///////////////////////////////////////////////
+// Bind Input Functionality
+///////////////////////////////////////////////
 void ADefaultMovement::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
@@ -157,4 +173,16 @@ void ADefaultMovement::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 		if (CommandAction)
 			enhancedInput->BindAction(CommandAction, ETriggerEvent::Started, this, &ADefaultMovement::Command);
 	}
+}
+
+///////////////////////////////////////////////
+// Levels Control
+///////////////////////////////////////////////
+
+void ADefaultMovement::ChangeFloorUp(const FInputActionValue& val) {
+	if (LevelManager) LevelManager->FloorUp();
+}
+
+void ADefaultMovement::ChangeFloorDown(const FInputActionValue& val) {
+	if (LevelManager) LevelManager->FloorDown();
 }
