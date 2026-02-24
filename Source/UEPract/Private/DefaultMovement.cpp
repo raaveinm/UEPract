@@ -15,7 +15,7 @@
 #include "Kismet/GameplayStatics.h"
 
 ///////////////////////////////////////////////
-// Default Movement
+/// Default Movement
 ///////////////////////////////////////////////
 ADefaultMovement::ADefaultMovement()
 {
@@ -56,7 +56,7 @@ ADefaultMovement::ADefaultMovement()
 }
 
 ///////////////////////////////////////////////
-// Begin Game
+/// Begin Game
 ///////////////////////////////////////////////
 void ADefaultMovement::BeginPlay() {
 	Super::BeginPlay();
@@ -87,7 +87,7 @@ void ADefaultMovement::BeginPlay() {
 }
 
 ///////////////////////////////////////////////
-// Movement handling
+/// Movement handling
 ///////////////////////////////////////////////
 
 void ADefaultMovement::Command(const FInputActionValue& val) {
@@ -129,29 +129,37 @@ void ADefaultMovement::Zoom(const FInputActionValue& val) {
 
 
 ///////////////////////////////////////////////
-// Tick
+/// Tick
 ///////////////////////////////////////////////
 void ADefaultMovement::Tick(const float DeltaTime) {
 	Super::Tick(DeltaTime);
 	
-	if (LevelManager) {
-		int32 CalculatedFloor = FMath::Max(0, FMath::FloorToInt(GetActorLocation().Z / LevelManager->FLOOR_HEIGHT));
-		LevelManager->SetFloor(CalculatedFloor);
-	}
+	if (!LevelManager) return;
 
 	FHitResult Hit;
 	FVector Start = GetActorLocation();
+	Start.Z += 2000.f;
 	FVector End = Start - FVector(0,0,10000);
+	
 	FCollisionQueryParams Params;
 	Params.AddIgnoredActor(this);
 	
 	if (GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_GameTraceChannel1, Params))  {
+		
+		int32 CalculatedFloor = FMath::Clamp(
+			FMath::FloorToInt((Hit.Location.Z + 10.f) / LevelManager->FLOOR_HEIGHT), 
+			LevelManager->MIN_FLOOR, 
+			LevelManager->MAX_FLOOR
+		);
+		LevelManager->SetFloor(CalculatedFloor);
+		
 		float DesiredHeight = 100.f;
-		float CurrentHeight = Hit.Distance;
-		if (FMath::Abs(CurrentHeight - DesiredHeight) > 1.f) 
+		float TargetZ = Hit.Location.Z + DesiredHeight;
+
+		if (FMath::Abs(GetActorLocation().Z - TargetZ) > 1.f) 
 		{
 			FVector NewLoc = GetActorLocation();
-			NewLoc.Z = FMath::FInterpTo(NewLoc.Z, Hit.Location.Z + DesiredHeight, DeltaTime, 10.f);
+			NewLoc.Z = FMath::FInterpTo(NewLoc.Z, TargetZ, DeltaTime, 10.f);
 			SetActorLocation(NewLoc);
 		}
 	}
@@ -172,17 +180,25 @@ void ADefaultMovement::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 			enhancedInput->BindAction(ZoomAction, ETriggerEvent::Triggered, this, &ADefaultMovement::Zoom);
 		if (CommandAction)
 			enhancedInput->BindAction(CommandAction, ETriggerEvent::Started, this, &ADefaultMovement::Command);
+		if (FloorUpAction)
+			enhancedInput->BindAction(FloorUpAction, ETriggerEvent::Started, this, &ADefaultMovement::ChangeFloorUp);
+		if (FloorDownAction)
+			enhancedInput->BindAction(FloorDownAction, ETriggerEvent::Started, this, &ADefaultMovement::ChangeFloorDown);
 	}
 }
 
 ///////////////////////////////////////////////
-// Levels Control
+/// Levels Control
 ///////////////////////////////////////////////
 
 void ADefaultMovement::ChangeFloorUp(const FInputActionValue& val) {
-	if (LevelManager) LevelManager->FloorUp();
+	if (LevelManager && LevelManager->CURRENT_FLOOR < LevelManager->MAX_FLOOR) {
+		LevelManager->FloorUp();
+	}
 }
 
 void ADefaultMovement::ChangeFloorDown(const FInputActionValue& val) {
-	if (LevelManager) LevelManager->FloorDown();
+	if (LevelManager && LevelManager->CURRENT_FLOOR > LevelManager->MIN_FLOOR) { 
+		LevelManager->FloorDown();
+	}
 }

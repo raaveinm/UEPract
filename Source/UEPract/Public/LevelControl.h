@@ -47,6 +47,6 @@ public:
 	void FloorDown();
 	
 private:
-	void UpdateFloorVisibility();
+	void UpdateFloorVisibility() const;
 	
 };

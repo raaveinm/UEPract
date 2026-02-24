@@ -40,7 +40,7 @@ void ALevelControl::FloorDown() {
 	SetFloor(CURRENT_FLOOR - 1);
 }
 
-void ALevelControl::UpdateFloorVisibility() {
+void ALevelControl::UpdateFloorVisibility() const {
 	for (TActorIterator<AActor> it(GetWorld()); it; ++it) {
 		AActor* actor = *it;
 		if (actor->ActorHasTag(FName("MultiFloor"))) {
@@ -65,6 +65,11 @@ void ALevelControl::UpdateFloorVisibility() {
 				for (UPrimitiveComponent* Comp : Comps) {
 					Comp->SetCollisionResponseToChannel(
 						ECC_GameTraceChannel1, 
+						bShouldHide ? ECR_Ignore : ECR_Block
+					);
+					
+					Comp->SetCollisionResponseToChannel(
+						ECC_Visibility, 
 						bShouldHide ? ECR_Ignore : ECR_Block
 					);
 				}

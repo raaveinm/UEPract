@@ -71,13 +71,20 @@ protected:
 	// zoom
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
 	class UInputAction* ZoomAction;
+	
+	// floor
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+	class UInputAction* FloorUpAction;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+	class UInputAction* FloorDownAction;
+	
 
 	// handling movement & zoom
 	void Move(const struct FInputActionValue& val);
 	void Zoom(const struct FInputActionValue& val);
 	
 	///////////////////////////////////////////////
-	// Level Manager
+	/// Level Manager
 	///////////////////////////////////////////////
 	
 	UPROPERTY()
